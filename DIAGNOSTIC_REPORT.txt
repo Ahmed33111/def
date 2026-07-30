@@ -1,0 +1,26 @@
+﻿================================================================================
+DIAGNOSTIC REPORT - 2026-07-02 14:09:29
+================================================================================
+
+=== TEST 1 : COMPILATION BACKEND ===
+Status: ✅ OK
+
+=== TEST 2 : COMPILATION FRONTEND ===
+Status: ❌ ERREUR
+
+=== TEST 3 : CRYPTOCONVERTER ===
+Status: ⚠️  PROBLÈMES
+⚠️  N'utilise pas AES/ECB explicite (peut causer des doublons)
+
+=== TEST 4 : ACCOUNTCOMPONENT.TSX ===
+Status: ⚠️  PROBLÈMES
+⚠️  scheduledDate est optional (peut être undefined)
+⚠️  scheduledTime est optional (peut être undefined)
+⚠️  formData n'initialise pas scheduledDate/Time
+
+=== TEST 5 : BANKCARDREPOSITORY ===
+Status: ✅ OK
+
+=== TEST 6 : SCHEMA SQL ===
+Status: ✅ OK - UNIQUE sur card_number
+

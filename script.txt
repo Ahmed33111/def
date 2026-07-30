@@ -1,0 +1,451 @@
+================================================================================
+        PROJET BANCAIRE FULL-STACK - DOCUMENTATION COMPLETE
+================================================================================
+
+================================================================================
+1. VUE D'ENSEMBLE DU PROJET
+================================================================================
+
+Ce projet est un systeme bancaire complet full-stack multi-rôles permettant la
+gestion d'agences bancaires avec des opérations de comptes, transferts, cartes
+bancaires, et un tableau de bord analytique avancé style Power BI.
+
+Le systeme supporte 4 rôles :
+  - ADMIN       : Gestion globale de toutes les agences et utilisateurs
+  - DIRECTOR    : Gestion d'une agence spécifique (statistiques, clients, staff)
+  - CASHIER     : Opérations courantes (création comptes, dépots, retraits, cartes)
+  - USER/CLIENT : Consultation de comptes, transferts, cartes personnelles
+
+================================================================================
+2. ARCHITECTURE MULTI-SERVICES
+================================================================================
+
+Le projet est composé de 3 services indépendants :
+
+  +------------------+       +------------------+       +------------------+
+  |   FRONTEND       |       |   BACKEND        |       |   ML SERVICE     |
+  |   React + Vite   |<----->|   Spring Boot    |<----->|   FastAPI        |
+  |   Port 3001      |       |   Port 8082      |       |   Port 8000      |
+  |   TypeScript     |       |   Java 17        |       |   Python         |
+  |   Tailwind CSS   |       |   MySQL          |       |   Classification |
+  +------------------+       +------------------+       +------------------+
+
+  - Frontend  : http://localhost:3001
+  - Backend   : http://localhost:8082
+  - ML Service: http://localhost:8000
+
+================================================================================
+3. STRUCTURE DES FICHIERS
+================================================================================
+
+AppBancaire/
+|
+|-- Backend/                              # Service Spring Boot
+|   |-- src/main/java/com/example/bank/demo/
+|   |   |
+|   |   |-- DemoApplication.java          # Point d'entrée Spring Boot
+|   |   |
+|   |   |-- config/                       # Configuration
+|   |   |   |-- SecurityConfig.java       # Configuration Spring Security
+|   |   |   |-- AuthenticationFilter.java # Filtre d'authentification Basic Auth
+|   |   |   |-- AsyncConfig.java          # Configuration asynchrone
+|   |   |
+|   |   |-- controller/                   # Contrôleurs REST API
+|   |   |   |-- AuthController.java       # Authentification (login, register)
+|   |   |   |-- AccountController.java    # Gestion des comptes client
+|   |   |   |-- CashierController.java    # Opérations caissier (cartes, comptes, dépots)
+|   |   |   |-- AdminController.java      # Administration globale
+|   |   |   |-- DirectorController.java   # Gestion directeur d'agence
+|   |   |   |-- DocumentController.java   # Gestion des documents KYC
+|   |   |   |-- StatsController.java      # Statistiques dashboard unifiées
+|   |   |   |-- HomeController.java       # Page d'accueil
+|   |   |
+|   |   |-- model/                        # Entités JPA
+|   |   |   |-- User.java                 # Utilisateur (id, username, password, role, agency)
+|   |   |   |-- Account.java              # Compte bancaire (numéro, solde, statut)
+|   |   |   |-- Agency.java               # Agence bancaire (code, nom, adresse)
+|   |   |   |-- BankCard.java             # Carte bancaire (numéro, type, limites)
+|   |   |   |-- Transaction.java          # Transaction (montant, type, date)
+|   |   |   |-- CashierLog.java           # Journal d'audit caissier
+|   |   |   |-- ClientDocument.java       # Document client (KYC, justificatifs)
+|   |   |   |-- VirementProgramme.java    # Virement programmé
+|   |   |   |-- ExpenseCategory.java      # Catégorie de dépenses
+|   |   |   |-- Currency.java             # Devise
+|   |   |   |-- AuditLog.java             # Journal d'audit
+|   |   |   |-- AccountCreationRequest.java  # DTO création de compte
+|   |   |   |-- BankCardRequest.java      # DTO demande de carte
+|   |   |   |-- TransferRequest.java      # DTO de transfert
+|   |   |
+|   |   |-- repository/                   # Repositories JPA
+|   |   |   |-- UserRepository.java       # CRUD utilisateurs + requêtes custom
+|   |   |   |-- AccountRepository.java    # CRUD comptes
+|   |   |   |-- AgencyRepository.java     # CRUD agences
+|   |   |   |-- BankCardRepository.java   # CRUD cartes
+|   |   |   |-- TransactionRepository.java# CRUD transactions
+|   |   |   |-- CashierLogRepository.java # CRUD logs caissier
+|   |   |   |-- ClientDocumentRepository.java # CRUD documents
+|   |   |   |-- VirementProgrammeRepository.java # CRUD virements programmés
+|   |   |   |-- ExpenseCategoryRepository.java  # CRUD catégories
+|   |   |
+|   |   |-- service/                      # Logique métier
+|   |   |   |-- UserService.java          # Authentification, validation rôles, CRUD users
+|   |   |   |-- AccountService.java       # Transferts, statistiques, gestion comptes
+|   |   |   |-- TransactionService.java   # Gestion des transactions
+|   |   |   |-- BankCardService.java      # Gestion des cartes
+|   |   |   |-- CashierLogService.java    # Journal d'audit
+|   |   |   |-- DocumentService.java      # Gestion documents + appel ML
+|   |   |   |-- AgencyService.java        # Gestion des agences
+|   |   |   |-- VirementProgrammeService.java # Virements programmés
+|   |   |   |-- ScheduledTaskService.java # Tâches planifiées (Quartz)
+|   |   |   |-- ExpenseCategoryService.java # Catégories de dépenses
+|   |   |   |-- TransferService.java      # Service de transfert
+|   |   |
+|   |   |-- exception/                    # Gestion des erreurs
+|   |   |   |-- UnauthorizedException.java  # Exception 401
+|   |   |   |-- ForbiddenException.java     # Exception 403
+|   |   |   |-- ValidationException.java    # Exception validation
+|   |   |   |-- GlobalExceptionHandler.java # Handler global (401, 403, 400, 500)
+|   |   |
+|   |   |-- security/                     # Utilitaires sécurité
+|   |   |   |-- PasswordEncoder.java      # Encodage BCrypt des mots de passe
+|   |   |
+|   |   |-- util/                         # Utilitaires
+|   |       |-- ...
+|   |
+|   |-- src/main/resources/
+|   |   |-- application.properties        # Configuration (MySQL, port, upload)
+|   |   |-- schema.sql                    # Schéma de la base de données
+|   |   |-- data.sql                      # Données initiales (agences, users)
+|   |
+|   |-- pom.xml                           # Dépendances Maven
+|   |-- mvnw / mvnw.cmd                   # Maven Wrapper
+|
+|-- Frontend/                             # Service React
+|   |-- src/
+|   |   |
+|   |   |-- main.tsx                      # Point d'entrée React
+|   |   |-- App.tsx                       # Composant racine (routing, auth, layout)
+|   |   |-- api.ts                        # Configuration API (base URL)
+|   |   |-- style.css                     # Styles globaux
+|   |   |
+|   |   |-- components/                   # Composants React
+|   |   |   |-- LoginComponent.tsx        # Page de connexion
+|   |   |   |-- RegisterComponent.tsx     # Page d'inscription
+|   |   |   |-- Navbar.tsx                # Barre de navigation
+|   |   |   |-- LogoutButton.tsx          # Bouton de déconnexion
+|   |   |   |
+|   |   |   |-- AdminDashboard.tsx        # Dashboard Admin (KPIs, heatmaps, charts)
+|   |   |   |-- DirectorDashboard.tsx     # Dashboard Directeur (navigation)
+|   |   |   |-- DirectorAgencyStats.tsx   # Statistiques agence (Power BI style)
+|   |   |   |-- DirectorClientManagement.tsx  # Gestion clients
+|   |   |   |-- DirectorUserManagement.tsx    # Gestion utilisateurs
+|   |   |   |-- CashierDashboard.tsx      # Dashboard Caissier (opérations)
+|   |   |   |-- AccountComponent.tsx      # Dashboard Client (comptes, transferts)
+|   |   |   |
+|   |   |   |-- DocumentReviewDashboard.tsx   # Revue documents KYC
+|   |   |   |-- ProfileComponent.tsx      # Profil utilisateur
+|   |   |   |-- FediComponent.tsx         # Composant Fedi
+|   |   |   |-- FormField.tsx             # Composant champ de formulaire
+|   |   |
+|   |   |-- pages/
+|   |   |   |-- DirectorFedi.tsx          # Page Fedi directeur
+|   |   |
+|   |   |-- types/
+|   |   |   |-- statistics.ts             # Types TypeScript pour statistiques
+|   |   |
+|   |   |-- utils/
+|   |       |-- validation.ts             # Fonctions de validation
+|   |
+|   |-- package.json                      # Dépendances npm
+|   |-- vite.config.ts                    # Configuration Vite
+|   |-- tailwind.config.js                # Configuration Tailwind CSS
+|   |-- tsconfig.json                     # Configuration TypeScript
+|   |-- index.html                        # HTML racine
+|
+|-- ml-service/                           # Service Machine Learning
+|   |-- main.py                           # API FastAPI (endpoints /classify, /health)
+|   |-- classifier.py                     # Classifieur de documents (keyword-based)
+|   |-- requirements.txt                  # Dépendances Python
+|
+|-- README.md                             # Documentation principale
+|-- architect.md                          # Documentation architecture
+|-- wiw.md / wiw2.md                      # Notes de travail
+
+================================================================================
+4. BASE DE DONNEES (MySQL - banque)
+================================================================================
+
+Tables principales :
+
+  agencies          : Agences bancaires (code, nom, adresse, directeur)
+  users             : Utilisateurs (username, password BCrypt, role, agency_id)
+  account           : Comptes bancaires (numéro, solde, user_id, statut)
+  transactions      : Transactions (montant, type DEBIT/CREDIT, date, account_id)
+  bank_cards        : Cartes (numéro, type VISA/MASTERCARD, limites, CVV, blocage)
+  expense_category  : Catégories de dépenses (nom, couleur)
+  virement_programme: Virements programmés (source, destination, montant, date)
+  cashier_logs      : Journal d'audit caissier (type, description, statut)
+  client_documents  : Documents clients (type, fichier, statut PENDING/APPROVED)
+
+Relations clés :
+  - users.agency_id        -> agencies.id
+  - account.user_id        -> users.id
+  - transactions.account_id -> account.id
+  - bank_cards.account_id  -> account.id
+  - cashier_logs.cashier_id -> users.id
+  - client_documents.user_id -> users.id
+
+================================================================================
+5. SECURITE ET AUTHENTIFICATION
+================================================================================
+
+Mode d'authentification : HTTP Basic Authentication
+
+Flux :
+  1. Le client envoie ses identifiants en Base64 dans le header Authorization
+  2. Le backend décode et vérifie username + password (BCrypt) via UserService.authenticate()
+  3. Le rôle est vérifié via des validateurs dédiés :
+     - validateUser(authHeader)     -> Retourne le user authentifié
+     - validateCashier(authHeader)  -> Authentifie + vérifie ROLE_CASHIER
+     - validateAdmin(authHeader)    -> Authentifie + vérifie ROLE_ADMIN
+     - validateDirector(authHeader) -> Authentifie + vérifie ROLE_DIRECTOR
+  4. En cas d'échec :
+     - Identifiants invalides -> UnauthorizedException (401)
+     - Rôle insuffisant       -> ForbiddenException (403)
+  5. Le GlobalExceptionHandler convertit ces exceptions en réponses HTTP propres
+
+Sécurité frontend :
+  - Les identifiants sont stockés dans localStorage ('credentials')
+  - Chaque requête fetch inclut le header Authorization
+  - En cas de 401/403, la fonction handleAuthFailure() force la déconnexion
+    et redirige vers la page de login (évite les dashboards "zombie")
+
+================================================================================
+6. API REST ENDPOINTS
+================================================================================
+
+AUTHENTIFICATION :
+  POST /api/auth/login          # Connexion
+  POST /api/auth/register       # Inscription
+
+COMPTE CLIENT (AccountController - /api/accounts) :
+  GET  /api/accounts            # Liste des comptes du user authentifié
+  GET  /api/accounts/{id}       # Détail d'un compte
+  GET  /api/accounts/{id}/transactions  # Transactions d'un compte
+  GET  /api/accounts/transactions/all   # Toutes les transactions
+  POST /api/accounts/transfer   # Transfert immédiat
+  GET  /api/accounts/statistics # Statistiques personnelles
+  GET  /api/accounts/balance-history    # Historique du solde
+  GET  /api/accounts/expense-statistics # Statistiques dépenses
+  POST /api/accounts/transfers/programmes # Créer un virement programmé
+  GET  /api/accounts/transfers/programmes # Liste des virements programmés
+
+CAISSIER (CashierController - /api/cashier) :
+  GET  /api/cashier/accounts/agency     # Comptes de l'agence
+  GET  /api/cashier/cards/{accountId}   # Cartes d'un compte
+  PUT  /api/cashier/cards/{id}/block    # Bloquer une carte
+  DELETE /api/cashier/cards/{id}        # Supprimer une carte
+  POST /api/cashier/cards               # Créer une carte bancaire
+  POST /api/cashier/accounts/create     # Créer un compte client
+  PUT  /api/cashier/accounts/{id}/close # Clôturer un compte
+  POST /api/cashier/deposit             # Effectuer un depot
+  POST /api/cashier/withdraw            # Effectuer un retrait
+  POST /api/cashier/transfer/internal   # Transfert interne
+  GET  /api/cashier/logs                # Journal du caissier
+  GET  /api/cashier/agency-transactions # Transactions de l'agence
+  GET  /api/cashier/agency-info         # Infos de l'agence
+  PUT  /api/cashier/users/{id}          # Modifier infos client
+
+ADMIN (AdminController - /api/admin) :
+  GET  /api/admin/users                 # Tous les utilisateurs
+  GET  /api/admin/agencies              # Toutes les agences
+  POST /api/admin/agencies              # Créer une agence
+  PUT  /api/admin/users/{id}/role       # Modifier le rôle d'un user
+  DELETE /api/admin/users/{id}          # Supprimer un user
+  GET  /api/admin/statistics            # Statistiques globales
+
+DIRECTEUR (DirectorController - /api/director) :
+  GET  /api/director/agency/stats       # Statistiques de l'agence
+  GET  /api/director/clients            # Clients de l'agence
+  GET  /api/director/staff              # Staff de l'agence
+  PUT  /api/director/clients/{id}       # Modifier un client
+
+DOCUMENTS (DocumentController - /api/documents) :
+  POST /api/documents/upload            # Uploader un document
+  GET  /api/documents/user/{userId}     # Documents d'un user
+  GET  /api/documents/pending           # Documents en attente (staff)
+  PUT  /api/documents/{id}/approve      # Approuver un document
+  PUT  /api/documents/{id}/reject       # Rejeter un document
+  GET  /api/documents/stats             # Statistiques documents
+
+STATISTIQUES UNIFIEES (StatsController - /api/stats) :
+  GET  /api/stats/dashboard?period=month # Dashboard data (role-tailored)
+    Retourne : KPIs, evolution, pie charts, heatmap, breakdowns
+    Adapté selon le rôle : ADMIN (global), DIRECTOR/CASHIER (agence), USER (personnel)
+
+================================================================================
+7. FRONTEND - COMPOSANTS ET FONCTIONNEMENT
+================================================================================
+
+ROUTING (App.tsx) :
+  - Non authentifié  -> LoginComponent
+  - ROLE_ADMIN       -> AdminDashboard
+  - ROLE_DIRECTOR    -> DirectorDashboard (avec sous-vues)
+  - ROLE_CASHIER     -> CashierDashboard
+  - ROLE_USER        -> AccountComponent
+
+DASHBOARDS POWER BI STYLE :
+  Chaque dashboard inclut :
+  - KPI Cards animés (compteur animé avec easeOutCubic, durée 1200ms)
+  - Graphiques d'évolution (AreaChart Recharts / LineChart Chart.js)
+  - Graphiques en camembert (PieChart pour répartition types de comptes/cartes)
+  - Graphiques en barres (comparaison agences, activité mensuelle)
+  - Heatmap d'activité (tableau coloré avec intensité proportionnelle)
+  - Filtres de période interactifs (semaine/mois/trimestre/année)
+  - Données fetchées depuis /api/stats/dashboard?period=X
+
+BIBLIOTHEQUES UTILISEES :
+  - Recharts        : Graphiques Area, Pie, Bar dans Admin/Director/Cashier dashboards
+  - Chart.js (react-chartjs-2) : Graphiques Line, Pie, Bar dans AccountComponent
+  - Framer Motion   : Animations UI
+  - Lucide React    : Icones
+  - Tailwind CSS    : Styling utility-first
+  - jsPDF           : Export PDF de relevés
+  - SockJS + STOMP  : WebSocket pour notifications temps réel
+  - ZXCVBN          : Vérification force du mot de passe
+
+GESTION DES ERREURS :
+  - handleAuthFailure(response) : Détecte 401/403 et appelle onLogout()
+  - onLogout() : Supprime localStorage.credentials et redirige vers login
+  - Notifications toast pour les erreurs métier
+
+================================================================================
+8. ML SERVICE - CLASSIFICATION DE DOCUMENTS
+================================================================================
+
+Le service ML (FastAPI, port 8000) classifie les documents uploadés par les clients.
+
+Fonctionnement :
+  1. Le client upload un document (image/PDF) via le frontend
+  2. Le backend Spring Boot reçoit le fichier et l'appelle le ML service
+  3. Le ML service analyse le nom de fichier et le contenu textuel
+  4. Classification par mots-clés dans ces catégories :
+     - KYC (pièce d'identité)
+     - DEPOSIT_PROOF (justificatif de depot)
+     - INCOME_PROOF (justificatif de revenu)
+     - ADDRESS_PROOF (justificatif de domicile)
+     - OTHER
+  5. Retourne : type détecté + score de confiance + mots-clés trouvés
+
+Fichiers :
+  - main.py       : API FastAPI avec endpoints /classify et /health
+  - classifier.py : Classifieur basé sur mots-clés (pas de modèle ML lourd)
+
+================================================================================
+9. DEMARRAGE ET COMMANDES
+================================================================================
+
+PREREQUIS :
+  - Java 17+ installé
+  - Node.js 18+ installé
+  - Python 3.9+ installé
+  - MySQL démarré (XAMPP ou autre) avec base "banque" créée
+
+DEMARRAGE DU BACKEND :
+  cd Backend
+  .\mvnw spring-boot:run
+  (Démarre sur http://localhost:8082)
+
+DEMARRAGE DU FRONTEND :
+  cd Frontend
+  npm install          # Installer les dépendances (première fois)
+  npm run dev          # Mode développement (http://localhost:5173)
+  OU
+  npm run build && npm run preview  # Mode production (http://localhost:3001)
+
+DEMARRAGE DU ML SERVICE :
+  cd ml-service
+  pip install -r requirements.txt    # Première fois
+  python main.py                     # Démarre sur http://localhost:8000
+
+COMPILATION :
+  Backend  : .\mvnw compile
+  Frontend : npm run build
+
+================================================================================
+10. CONFIGURATION
+================================================================================
+
+Backend (application.properties) :
+  - MySQL : localhost:3306/banque (root, sans mot de passe)
+  - Port serveur : 8082
+  - Upload max : 10MB
+  - Dossier upload : uploads/documents
+  - JPA : ddl-auto=update, show-sql=true
+
+Frontend (vite.config.ts) :
+  - Port dev : 5173 (Vite par défaut)
+  - Port preview : 3001
+  - Proxy API vers backend : localhost:8082
+
+ML Service (main.py) :
+  - Port : 8000
+  - CORS : Autorise localhost:3001, localhost:8082, localhost:5173
+
+================================================================================
+11. FONCTIONNALITES PRINCIPALES
+================================================================================
+
+POUR LE CLIENT (USER) :
+  - Consulter ses comptes et soldes
+  - Voir l'historique des transactions
+  - Effectuer des transferts (immédiats et programmés)
+  - Gérer ses cartes bancaires (bloquer, paramètres)
+  - Uploader des documents KYC
+  - Voir ses statistiques personnelles (dashboard avec graphiques)
+  - Exporter ses relevés en PDF
+
+POUR LE CAISSIER :
+  - Créer des comptes clients
+  - Créer et gérer des cartes bancaires
+  - Effectuer des depots et retraits
+  - Clôturer des comptes
+  - Voir les transactions de son agence
+  - Consulter le journal d'audit
+  - Dashboard avec KPIs, graphiques et heatmap
+
+POUR LE DIRECTEUR :
+  - Voir les statistiques de son agence
+  - Gérer les clients et le staff
+  - Comparer les performances entre agences
+  - Dashboard avec évolution, camemberts, heatmaps
+
+POUR L'ADMINISTRATEUR :
+  - Gestion globale de toutes les agences
+  - Gestion des rôles utilisateurs
+  - Statistiques bancaires globales
+  - Dashboard comparatif toutes agences
+
+GESTION DOCUMENTAIRE :
+  - Upload de documents par les clients
+  - Classification automatique par le ML service
+  - Revue et validation par le staff (caissier/admin/directeur)
+  - Statut : PENDING -> APPROVED / REJECTED
+
+================================================================================
+12. RESUME TECHNIQUE
+================================================================================
+
+  Backend  : Spring Boot 3.1.5, Java 17, Spring Security, Spring Data JPA,
+             Hibernate, MySQL, Quartz Scheduler, WebSocket, BCrypt
+  Frontend : React 18, TypeScript, Vite, Tailwind CSS, Recharts, Chart.js,
+             Framer Motion, Lucide Icons, jsPDF, SockJS/STOMP
+  ML       : FastAPI, Python, classification par mots-clés
+  DB       : MySQL (9 tables, relations FK)
+  Auth     : HTTP Basic Authentication + validation rôle par contrôleur
+  Sécurité : Exceptions custom (401/403), GlobalExceptionHandler,
+             auto-logout frontend sur 401/403
+
+================================================================================
+                          FIN DU DOCUMENT
+================================================================================
